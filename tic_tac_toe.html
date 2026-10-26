@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Tic-Tac-Toe</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap');
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #0f172a; /* Slate 900 */
+            color: #f8fafc; /* Slate 50 */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        .cell {
+            width: 100px;
+            height: 100px;
+            background-color: #1e293b; /* Slate 800 */
+            border-radius: 1rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 4rem;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            transition: all 0.3s ease;
+            user-select: none;
+        }
+
+        @media (max-width: 400px) {
+            .cell {
+                width: 80px;
+                height: 80px;
+                font-size: 3rem;
+            }
+        }
+
+        .cell:hover {
+            transform: translateY(-5px);
+            background-color: #334155; /* Slate 700 */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.15);
+        }
+
+        .cell.x {
+            color: #38bdf8; /* Light Blue */
+            text-shadow: 0 0 15px rgba(56, 189, 248, 0.6);
+        }
+
+        .cell.o {
+            color: #f472b6; /* Pink */
+            text-shadow: 0 0 15px rgba(244, 114, 182, 0.6);
+        }
+
+        .cell.win {
+            animation: pulse-win 1.5s infinite;
+        }
+
+        @keyframes pulse-win {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); background-color: #475569; }
+        }
+
+        .btn-restart {
+            background: linear-gradient(135deg, #6366f1, #a855f7);
+            transition: all 0.3s ease;
+        }
+
+        .btn-restart:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(168, 85, 247, 0.5);
+        }
+
+        #status-container {
+            min-height: 3rem; /* Prevents layout shift when status changes */
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center">
+
+    <div class="max-w-md w-full p-6 bg-slate-800 bg-opacity-50 backdrop-blur-md rounded-2xl shadow-2xl border border-slate-700 text-center">
+        
+        <h1 class="text-4xl font-extrabold mb-6 tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-purple-500">
+            TIC TAC TOE
+        </h1>
+
+        <!-- Status Message Box -->
+        <div id="status-container" class="mb-6 flex justify-center items-center">
+            <h2 id="status" class="text-2xl font-semibold px-4 py-2 rounded-lg bg-slate-700 bg-opacity-50 border border-slate-600 shadow-inner">
+                Player <span class="text-cyan-400">X</span>'s Turn
+            </h2>
+        </div>
+
+        <!-- Game Board -->
+        <div id="board" class="grid grid-cols-3 gap-3 md:gap-4 mb-8 justify-center mx-auto w-max">
+            <div class="cell" data-index="0"></div>
+            <div class="cell" data-index="1"></div>
+            <div class="cell" data-index="2"></div>
+            <div class="cell" data-index="3"></div>
+            <div class="cell" data-index="4"></div>
+            <div class="cell" data-index="5"></div>
+            <div class="cell" data-index="6"></div>
+            <div class="cell" data-index="7"></div>
+            <div class="cell" data-index="8"></div>
+        </div>
+
+        <!-- Restart Button -->
+        <button id="restart-btn" class="btn-restart text-white font-bold py-3 px-8 rounded-full shadow-lg text-lg tracking-wide focus:outline-none focus:ring-4 focus:ring-purple-500 focus:ring-opacity-50">
+            Restart Game
+        </button>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const cells = document.querySelectorAll('.cell');
+            const statusDisplay = document.getElementById('status');
+            const restartBtn = document.getElementById('restart-btn');
+
+            let board = ['', '', '', '', '', '', '', '', ''];
+            let currentPlayer = 'X';
+            let isGameActive = true;
+
+            const winningConditions = [
+                [0, 1, 2], // Top row
+                [3, 4, 5], // Middle row
+                [6, 7, 8], // Bottom row
+                [0, 3, 6], // Left column
+                [1, 4, 7], // Middle column
+                [2, 5, 8], // Right column
+                [0, 4, 8], // Diagonal 1
+                [2, 4, 6]  // Diagonal 2
+            ];
+
+            const winningMessage = () => `Player <span class="${currentPlayer === 'X' ? 'text-cyan-400' : 'text-pink-400'}">${currentPlayer}</span> Wins!`;
+            const drawMessage = () => `It's a <span class="text-yellow-400">Draw!</span>`;
+            const currentPlayerTurn = () => `Player <span class="${currentPlayer === 'X' ? 'text-cyan-400' : 'text-pink-400'}">${currentPlayer}</span>'s Turn`;
+
+            // Initialize game status
+            statusDisplay.innerHTML = currentPlayerTurn();
+
+            function handleCellPlayed(clickedCell, clickedCellIndex) {
+                board[clickedCellIndex] = currentPlayer;
+                clickedCell.innerHTML = currentPlayer;
+                clickedCell.classList.add(currentPlayer.toLowerCase());
+            }
+
+            function handlePlayerChange() {
+                currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+                statusDisplay.innerHTML = currentPlayerTurn();
+            }
+
+            function handleResultValidation() {
+                let roundWon = false;
+                let winningCells = [];
+
+                for (let i = 0; i < winningConditions.length; i++) {
+                    const winCondition = winningConditions[i];
+                    let a = board[winCondition[0]];
+                    let b = board[winCondition[1]];
+                    let c = board[winCondition[2]];
+
+                    if (a === '' || b === '' || c === '') {
+                        continue;
+                    }
+
+                    if (a === b && b === c) {
+                        roundWon = true;
+                        winningCells = winCondition;
+                        break;
+                    }
+                }
+
+                if (roundWon) {
+                    statusDisplay.innerHTML = winningMessage();
+                    isGameActive = false;
+                    
+                    // Highlight winning cells
+                    winningCells.forEach(index => {
+                        cells[index].classList.add('win');
+                    });
+                    return;
+                }
+
+                let roundDraw = !board.includes('');
+                if (roundDraw) {
+                    statusDisplay.innerHTML = drawMessage();
+                    isGameActive = false;
+                    return;
+                }
+
+                handlePlayerChange();
+            }
+
+            function handleCellClick(clickedCellEvent) {
+                const clickedCell = clickedCellEvent.target;
+                const clickedCellIndex = parseInt(clickedCell.getAttribute('data-index'));
+
+                // Ignore if cell is filled or game is over
+                if (board[clickedCellIndex] !== '' || !isGameActive) {
+                    return;
+                }
+
+                handleCellPlayed(clickedCell, clickedCellIndex);
+                handleResultValidation();
+            }
+
+            function handleRestartGame() {
+                board = ['', '', '', '', '', '', '', '', ''];
+                currentPlayer = 'X';
+                isGameActive = true;
+                statusDisplay.innerHTML = currentPlayerTurn();
+                
+                cells.forEach(cell => {
+                    cell.innerHTML = '';
+                    cell.classList.remove('x', 'o', 'win');
+                });
+            }
+
+            // Attach event listeners
+            cells.forEach(cell => cell.addEventListener('click', handleCellClick));
+            restartBtn.addEventListener('click', handleRestartGame);
+        });
+    </script>
+</body>
+</html>
